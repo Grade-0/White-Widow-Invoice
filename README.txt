@@ -25,3 +25,5 @@ Compact update:
 - Item menus are arranged in compact category columns on desktop.
 - Assets were optimized to keep the GitHub package smaller while preserving the look.
 - Totals and preview remain visible on the side.
+
+https://grade-0.github.io/White-Widow-Invoice/
