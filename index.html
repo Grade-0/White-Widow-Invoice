@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>White Widow Compact Invoice Calculator</title>
+  <link rel="icon" href="assets/ww_logo.png" />
+  <style>
+    :root {
+      --bg: #030604;
+      --panel: rgba(7, 11, 8, .82);
+      --panel-2: rgba(12, 18, 12, .92);
+      --line: rgba(215, 238, 205, .16);
+      --line-strong: rgba(215, 238, 205, .30);
+      --text: #f4f8ef;
+      --muted: #adbea6;
+      --green: #9ccc75;
+      --green-bright: #d7f3bf;
+      --purple: #c386ff;
+      --purple-soft: #eed8ff;
+      --danger: #ffb8b8;
+      --radius: 16px;
+      --shadow: 0 16px 42px rgba(0, 0, 0, .48);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--bg); min-height: 100%; }
+    body {
+      min-height: 100%;
+      margin: 0;
+      color: var(--text);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 12% 10%, rgba(195, 134, 255, .25), transparent 24rem),
+        radial-gradient(circle at 84% 6%, rgba(156, 204, 117, .20), transparent 28rem),
+        linear-gradient(180deg, rgba(0,0,0,.30), rgba(0,0,0,.86)),
+        url("assets/farmdrop.jpg") center center / cover fixed no-repeat;
+      letter-spacing: .01em;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: rgba(0,0,0,.30);
+      z-index: 0;
+    }
+
+    button, input, select { font: inherit; }
+    button { border: 0; cursor: pointer; color: var(--text); }
+
+    .app {
+      width: min(1260px, calc(100% - 18px));
+      margin: 0 auto;
+      padding: 10px 0 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 86px 1fr 300px;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: calc(var(--radius) + 6px);
+      background: linear-gradient(135deg, rgba(0,0,0,.78), rgba(15,24,16,.84));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .logo-wrap {
+      width: 86px;
+      height: 86px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      border: 1px solid var(--line-strong);
+      background: rgba(0,0,0,.42);
+      box-shadow: inset 0 0 28px rgba(156,204,117,.09);
+    }
+
+    .logo-wrap img { width: 82px; height: 82px; object-fit: contain; filter: drop-shadow(0 0 14px rgba(255,255,255,.13)); }
+    h1 { margin: 0; font-size: clamp(1.35rem, 3vw, 2.55rem); line-height: .95; letter-spacing: .08em; text-transform: uppercase; }
+    .sub { margin: 5px 0 0; color: var(--muted); font-size: .88rem; max-width: 760px; }
+    .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      border: 1px solid rgba(156,204,117,.24);
+      border-radius: 999px;
+      background: rgba(156,204,117,.10);
+      color: var(--green-bright);
+      font-size: .67rem;
+      font-weight: 850;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .live-total {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 4px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(195,134,255,.25);
+      background: rgba(9, 7, 14, .70);
+      text-align: right;
+    }
+
+    .live-total .label { color: var(--purple-soft); font-size: .68rem; font-weight: 900; letter-spacing: .13em; text-transform: uppercase; }
+    .live-total .amount { font-size: clamp(1.8rem, 3.4vw, 3rem); font-weight: 950; line-height: 1; }
+    .live-total .commission { color: var(--green-bright); font-family: var(--mono); font-size: .9rem; font-weight: 900; }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 10px;
+      margin-top: 10px;
+      align-items: start;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, rgba(156,204,117,.08), rgba(195,134,255,.06));
+    }
+
+    .card-head h2, .card-head h3 { margin: 0; font-size: .84rem; letter-spacing: .1em; text-transform: uppercase; }
+    .card-body { padding: 10px 12px; }
+
+    .invoice-card { margin-top: 10px; }
+    .form-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 8px; }
+    label { display: grid; gap: 4px; color: var(--muted); font-size: .67rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
+    label .req { color: var(--green-bright); }
+
+    input, select {
+      width: 100%;
+      min-height: 34px;
+      padding: 7px 9px;
+      color: var(--text);
+      background: rgba(0,0,0,.36);
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      outline: none;
+      transition: border-color .16s, box-shadow .16s, background .16s;
+    }
+
+    input:focus, select:focus { border-color: rgba(156,204,117,.72); box-shadow: 0 0 0 3px rgba(156,204,117,.13); background: rgba(0,0,0,.48); }
+    input::placeholder { color: rgba(244,248,239,.38); }
+    select option { background: #10160f; color: var(--text); }
+
+    .reminder {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 11px;
+      border: 1px solid rgba(195,134,255,.26);
+      background: linear-gradient(135deg, rgba(195,134,255,.15), rgba(156,204,117,.08));
+      color: #f8edff;
+      font-size: .82rem;
+      font-weight: 800;
+    }
+
+    .category-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 8px; }
+    .category-panel {
+      border: 1px solid rgba(207,232,198,.14);
+      border-radius: 14px;
+      background: rgba(0,0,0,.24);
+      overflow: hidden;
+    }
+
+    .category-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      background: rgba(255,255,255,.035);
+      border-bottom: 1px solid rgba(207,232,198,.10);
+    }
+
+    .category-title h3 { margin: 0; font-size: .78rem; letter-spacing: .13em; text-transform: uppercase; }
+    .cat-total { color: var(--green-bright); font-family: var(--mono); font-size: .83rem; font-weight: 950; }
+
+    .mini-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .mini-table th, .mini-table td { padding: 6px 7px; border-top: 1px solid rgba(207,232,198,.08); vertical-align: middle; }
+    .mini-table tr:first-child td { border-top: 0; }
+    .mini-table th {
+      color: var(--muted);
+      background: rgba(255,255,255,.02);
+      font-size: .62rem;
+      letter-spacing: .1em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+
+    .mini-table th:nth-child(2), .mini-table td:nth-child(2),
+    .mini-table th:nth-child(4), .mini-table td:nth-child(4) { text-align: right; }
+    .mini-table th:nth-child(3), .mini-table td:nth-child(3) { text-align: center; width: 58px; }
+    .mini-table th:nth-child(2), .mini-table td:nth-child(2) { width: 64px; }
+    .mini-table th:nth-child(4), .mini-table td:nth-child(4) { width: 74px; }
+
+    .item-name { font-weight: 850; color: #fff; font-size: .83rem; line-height: 1.1; }
+    .unit { display: inline-block; margin-top: 2px; color: var(--muted); font-family: var(--mono); font-size: .68rem; font-weight: 800; }
+    .price, .line-total { font-family: var(--mono); font-size: .78rem; font-weight: 900; }
+    .line-total { color: var(--green-bright); }
+    .qty-select { min-height: 30px; padding: 4px 6px; border-radius: 9px; font-family: var(--mono); font-size: .83rem; font-weight: 950; }
+
+    .side-stack { position: sticky; top: 8px; display: grid; gap: 10px; }
+    .summary-lines { display: grid; gap: 0; }
+    .summary-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(207,232,198,.10);
+    }
+    .summary-line:last-child { border-bottom: 0; }
+    .summary-line .k { color: var(--muted); font-size: .69rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
+    .summary-line .v { color: var(--text); font-family: var(--mono); font-size: .95rem; font-weight: 950; }
+    .summary-line.big .v { color: var(--green-bright); font-size: 1.7rem; }
+
+    .actions { display: grid; gap: 7px; margin-top: 10px; }
+    .btn {
+      min-height: 38px;
+      padding: 8px 10px;
+      border-radius: 11px;
+      border: 1px solid var(--line-strong);
+      background: rgba(255,255,255,.08);
+      font-size: .78rem;
+      font-weight: 950;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      transition: transform .15s, background .15s, border-color .15s;
+    }
+    .btn:hover { transform: translateY(-1px); background: rgba(255,255,255,.12); border-color: rgba(244,248,239,.36); }
+    .btn-primary { color: #071006; background: linear-gradient(135deg, var(--green-bright), #91d46a); border-color: rgba(212,237,191,.80); }
+    .btn-purple { background: linear-gradient(135deg, rgba(195,134,255,.82), rgba(156,204,117,.30)); border-color: rgba(195,134,255,.55); }
+    .btn-ghost { color: var(--muted); }
+    .status { min-height: 20px; margin-top: 7px; color: var(--green-bright); font-size: .78rem; font-weight: 850; }
+    .status.error { color: var(--danger); }
+    .fine-print { margin: 7px 0 0; color: rgba(244,248,239,.56); font-size: .72rem; line-height: 1.35; }
+
+    .invoice-list { max-height: 235px; overflow: auto; display: grid; gap: 6px; padding-right: 3px; }
+    .invoice-item { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 7px 9px; border: 1px solid rgba(207,232,198,.14); background: rgba(0,0,0,.22); border-radius: 10px; }
+    .invoice-item strong { color: var(--text); font-size: .82rem; }
+    .invoice-item small { display: block; margin-top: 2px; color: var(--muted); font-size: .70rem; }
+    .invoice-item b { color: var(--green-bright); font-family: var(--mono); font-size: .82rem; }
+    .empty { padding: 13px; border: 1px dashed rgba(207,232,198,.22); border-radius: 12px; color: rgba(244,248,239,.54); text-align: center; font-size: .82rem; }
+
+    .print-sheet { display: none; }
+
+    @media (max-width: 1120px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .side-stack { position: static; grid-template-columns: 1fr 1fr; }
+      .category-grid { grid-template-columns: repeat(3, minmax(230px, 1fr)); overflow-x: auto; }
+    }
+
+    @media (max-width: 760px) {
+      .topbar { grid-template-columns: 70px 1fr; }
+      .logo-wrap { width: 70px; height: 70px; border-radius: 15px; }
+      .logo-wrap img { width: 67px; height: 67px; }
+      .live-total { grid-column: 1 / -1; text-align: center; }
+      .form-grid { grid-template-columns: 1fr; }
+      .side-stack { grid-template-columns: 1fr; }
+      .category-grid { grid-template-columns: 1fr; overflow: visible; }
+      .mini-table th:nth-child(4), .mini-table td:nth-child(4) { display: none; }
+    }
+
+    @media print {
+      @page { size: letter; margin: .45in; }
+      * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      html, body { background: #fff !important; color: #111 !important; }
+      body::before, .app { display: none !important; }
+      .print-sheet { display: block !important; color: #111 !important; font-family: Arial, Helvetica, sans-serif; }
+      .print-header { display: grid; grid-template-columns: 82px 1fr auto; gap: 14px; align-items: center; padding-bottom: 12px; border-bottom: 2px solid #222; }
+      .print-header img { width: 82px; height: 82px; object-fit: contain; }
+      .print-header h1 { margin: 0; font-size: 28px; letter-spacing: .08em; text-transform: uppercase; }
+      .print-header p { margin: 4px 0 0; font-size: 12px; color: #333; }
+      .print-meta { text-align: right; font-size: 12px; line-height: 1.55; }
+      .print-section { margin-top: 12px; }
+      .print-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .print-box { border: 1px solid #c8c8c8; padding: 8px; min-height: 46px; border-radius: 8px; }
+      .print-box .label { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: #555; margin-bottom: 4px; font-weight: 700; }
+      .print-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+      .print-table th, .print-table td { border-bottom: 1px solid #d9d9d9; padding: 7px 6px; text-align: left; }
+      .print-table th { background: #efefef; text-transform: uppercase; letter-spacing: .06em; font-size: 10px; }
+      .print-table td:nth-child(4), .print-table td:nth-child(5), .print-table th:nth-child(4), .print-table th:nth-child(5) { text-align: right; }
+      .print-totals { margin-left: auto; width: min(310px, 100%); margin-top: 10px; border: 1px solid #c8c8c8; border-radius: 8px; overflow: hidden; }
+      .print-total-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; border-bottom: 1px solid #dcdcdc; }
+      .print-total-row:last-child { border-bottom: 0; }
+      .print-total-row.main { font-size: 18px; font-weight: 800; background: #efefef; }
+      .print-reminder { margin-top: 14px; padding: 9px; border: 1px solid #222; border-radius: 8px; font-weight: 700; text-align: center; }
+      .print-footer { margin-top: 12px; color: #555; font-size: 10px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app screen-only">
+    <header class="topbar">
+      <div class="logo-wrap" aria-hidden="true"><img src="assets/ww_logo.png" alt="White Widow Cannabis Dispensary logo" /></div>
+      <section>
+        <h1>Invoice Calculator</h1>
+        <p class="sub">Compact White Widow RP invoice tool. Pick quantities, export to PDF, then post the invoice in Discord.</p>
+        <div class="pills" aria-label="Calculator details">
+          <span class="pill">30% Commission</span>
+          <span class="pill">RP Info Only</span>
+          <span class="pill">No Taxes</span>
+          <span class="pill" id="invoiceIdPill">Invoice ID</span>
+        </div>
+      </section>
+      <aside class="live-total" aria-label="Invoice total">
+        <div class="label">Grand Total</div>
+        <div class="amount" id="heroTotal">$0</div>
+        <div class="commission" id="heroCommission">Commission: $0</div>
+      </aside>
+    </header>
+
+    <section class="card invoice-card">
+      <div class="card-head">
+        <h2>Invoice Info</h2>
+        <span class="pill">In-game / Discord only</span>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <label>
+            <span class="req">Budtender In-Game / Discord Name *</span>
+            <input id="budtender" autocomplete="off" placeholder="Required" />
+          </label>
+          <label>
+            Customer In-Game Name Optional
+            <input id="customerName" autocomplete="off" placeholder="Optional RP name" />
+          </label>
+          <label>
+            Customer In-Game Phone Optional
+            <input id="customerPhone" autocomplete="off" placeholder="Optional RP phone only" />
+          </label>
+        </div>
+        <div class="reminder">Reminder: export the invoice as a PDF and post it in Discord when finished.</div>
+      </div>
+    </section>
+
+    <div class="main-grid">
+      <section class="card" aria-label="Menu items">
+        <div class="card-head">
+          <h2>Menu / Qty</h2>
+          <span class="pill">Dropdown Qty</span>
+        </div>
+        <div id="itemsRoot" class="category-grid"></div>
+      </section>
+
+      <aside class="side-stack">
+        <section class="card">
+          <div class="card-head"><h3>Totals</h3></div>
+          <div class="card-body">
+            <div class="summary-lines">
+              <div class="summary-line"><span class="k">Items Selected</span><span class="v" id="selectedCount">0</span></div>
+              <div class="summary-line"><span class="k">Strains</span><span class="v" id="cat-Strains">$0</span></div>
+              <div class="summary-line"><span class="k">Joints</span><span class="v" id="cat-Joints">$0</span></div>
+              <div class="summary-line"><span class="k">Edibles</span><span class="v" id="cat-Edibles">$0</span></div>
+              <div class="summary-line"><span class="k">Budtender 30%</span><span class="v" id="commissionTotal">$0</span></div>
+              <div class="summary-line big"><span class="k">Total</span><span class="v" id="grandTotal">$0</span></div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-primary" id="printBtn">Export PDF</button>
+              <button class="btn btn-purple" id="copyBtn">Copy Discord Summary</button>
+              <button class="btn btn-ghost" id="resetBtn">Reset</button>
+            </div>
+            <div class="status" id="status" role="status" aria-live="polite"></div>
+            <p class="fine-print">PDF export uses the browser print window. Choose “Save as PDF,” then upload it to Discord.</p>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h3>Preview</h3></div>
+          <div class="card-body">
+            <div id="previewList" class="invoice-list"></div>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <section class="print-sheet" id="printSheet" aria-label="Printable invoice">
+    <div class="print-header">
+      <img src="assets/ww_logo.png" alt="White Widow Cannabis Dispensary logo" />
+      <div>
+        <h1>White Widow Invoice</h1>
+        <p>RP invoice record - generated by the White Widow invoice calculator</p>
+      </div>
+      <div class="print-meta">
+        <strong id="printInvoiceId">Invoice</strong><br />
+        <span id="printDate">Date</span>
+      </div>
+    </div>
+
+    <div class="print-section print-grid">
+      <div class="print-box"><span class="label">Budtender In-Game / Discord Name</span><strong id="printBudtender">-</strong></div>
+      <div class="print-box"><span class="label">Customer In-Game Info</span><strong id="printCustomer">Optional / Not provided</strong></div>
+    </div>
+
+    <div class="print-section">
+      <table class="print-table">
+        <thead>
+          <tr><th>Category</th><th>Item</th><th>Base Qty</th><th>Qty</th><th>Line Total</th></tr>
+        </thead>
+        <tbody id="printRows"></tbody>
+      </table>
+    </div>
+
+    <div class="print-totals">
+      <div class="print-total-row"><span>Strains</span><strong id="printCatStrains">$0</strong></div>
+      <div class="print-total-row"><span>Joints</span><strong id="printCatJoints">$0</strong></div>
+      <div class="print-total-row"><span>Edibles</span><strong id="printCatEdibles">$0</strong></div>
+      <div class="print-total-row"><span>Budtender Commission 30%</span><strong id="printCommission">$0</strong></div>
+      <div class="print-total-row main"><span>Grand Total</span><strong id="printGrandTotal">$0</strong></div>
+    </div>
+
+    <div class="print-reminder">Reminder: post this exported invoice in Discord when finished.</div>
+    <div class="print-footer">For GTA V RP server use only. Use in-game / Discord names only.</div>
+  </section>
+
+  <script>
+    const COMMISSION_RATE = 0.30;
+    const items = [
+      { category: "Strains", item: "Kush Mintz", unit: "2G", price: 750 },
+      { category: "Strains", item: "Mimosa", unit: "2G", price: 750 },
+      { category: "Strains", item: "Lemon Tree", unit: "2G", price: 750 },
+      { category: "Strains", item: "Tropical Punch", unit: "2G", price: 750 },
+      { category: "Strains", item: "Cereal Milk", unit: "2G", price: 750 },
+      { category: "Strains", item: "Apple Fritter", unit: "2G", price: 750 },
+      { category: "Strains", item: "Purple Punch", unit: "2G", price: 750 },
+      { category: "Strains", item: "Sunset Sherbet", unit: "2G", price: 750 },
+      { category: "Joints", item: "Kush Mintz Joint", unit: "1", price: 250 },
+      { category: "Joints", item: "Mimosa Joint", unit: "1", price: 250 },
+      { category: "Joints", item: "Lemon Tree Joint", unit: "1", price: 250 },
+      { category: "Joints", item: "Tropical Punch Joint", unit: "1", price: 250 },
+      { category: "Joints", item: "Sunset Sherbet Joint", unit: "1", price: 250 },
+      { category: "Joints", item: "Cereal Milk Joint", unit: "1", price: 250 },
+      { category: "Joints", item: "Apple Fritter Joint", unit: "1", price: 250 },
+      { category: "Edibles", item: "Apple Fritter Edibles", unit: "1", price: 350 },
+      { category: "Edibles", item: "Mimosa Edibles", unit: "1", price: 350 },
+      { category: "Edibles", item: "Purple Punch Edible", unit: "1", price: 350 },
+      { category: "Edibles", item: "Cereal Milk Edible", unit: "1", price: 350 },
+      { category: "Edibles", item: "Kush Mintz Edibles", unit: "1", price: 350 },
+      { category: "Edibles", item: "Lemon Tree Edibles", unit: "1", price: 350 },
+      { category: "Edibles", item: "Sunset Sherbet Edibles", unit: "1", price: 350 },
+      { category: "Edibles", item: "Tropical Punch Edibles", unit: "1", price: 350 }
+    ];
+
+    const categoryOrder = ["Strains", "Joints", "Edibles"];
+    const quantities = Object.fromEntries(items.map((_, index) => [index, 0]));
+    const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+    const byId = id => document.getElementById(id);
+    const clean = value => String(value || "").trim();
+
+    const invoiceId = (() => {
+      const now = new Date();
+      const stamp = now.toISOString().replace(/[-:TZ.]/g, "").slice(0, 12);
+      return `WW-${stamp}`;
+    })();
+
+    function money(value) { return currency.format(value); }
+    function buildQuantityOptions() { return Array.from({ length: 31 }, (_, i) => `<option value="${i}">${i}</option>`).join(""); }
+
+    function renderItems() {
+      const root = byId("itemsRoot");
+      root.innerHTML = "";
+
+      categoryOrder.forEach(category => {
+        const panel = document.createElement("section");
+        panel.className = "category-panel";
+        const categoryItems = items.map((item, index) => ({ ...item, index })).filter(item => item.category === category);
+        panel.innerHTML = `
+          <div class="category-title">
+            <h3>${category}</h3>
+            <div class="cat-total" id="catTitle-${category}">$0</div>
+          </div>
+          <table class="mini-table">
+            <thead><tr><th>Item</th><th>Price</th><th>Qty</th><th>Total</th></tr></thead>
+            <tbody>
+              ${categoryItems.map(item => `
+                <tr>
+                  <td><div class="item-name">${item.item}</div><span class="unit">Base: ${item.unit}</span></td>
+                  <td class="price">${money(item.price)}</td>
+                  <td><select class="qty-select" data-index="${item.index}" aria-label="Quantity for ${item.item}">${buildQuantityOptions()}</select></td>
+                  <td class="line-total" id="line-${item.index}">${money(0)}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+        root.appendChild(panel);
+      });
+
+      document.querySelectorAll(".qty-select").forEach(select => {
+        select.addEventListener("change", event => {
+          quantities[event.target.dataset.index] = Number(event.target.value || 0);
+          updateAll();
+        });
+      });
+    }
+
+    function getSelectedItems() {
+      return items
+        .map((item, index) => ({ ...item, index, qty: Number(quantities[index] || 0), line: Number(quantities[index] || 0) * item.price }))
+        .filter(item => item.qty > 0);
+    }
+
+    function calculate() {
+      const selected = getSelectedItems();
+      const categoryTotals = Object.fromEntries(categoryOrder.map(cat => [cat, 0]));
+      selected.forEach(item => { categoryTotals[item.category] += item.line; });
+      const total = selected.reduce((sum, item) => sum + item.line, 0);
+      const commission = Math.round(total * COMMISSION_RATE);
+      const itemCount = selected.reduce((sum, item) => sum + item.qty, 0);
+      return { selected, categoryTotals, total, commission, itemCount };
+    }
+
+    function updateAll() {
+      const calc = calculate();
+      byId("heroTotal").textContent = money(calc.total);
+      byId("heroCommission").textContent = `Commission: ${money(calc.commission)}`;
+      byId("selectedCount").textContent = calc.itemCount;
+      byId("commissionTotal").textContent = money(calc.commission);
+      byId("grandTotal").textContent = money(calc.total);
+
+      categoryOrder.forEach(category => {
+        byId(`cat-${category}`).textContent = money(calc.categoryTotals[category]);
+        byId(`catTitle-${category}`).textContent = money(calc.categoryTotals[category]);
+      });
+
+      items.forEach((item, index) => {
+        const line = Number(quantities[index] || 0) * item.price;
+        byId(`line-${index}`).textContent = money(line);
+      });
+
+      renderPreview(calc.selected);
+      updatePrintSheet(calc);
+      saveDraft();
+    }
+
+    function renderPreview(selected) {
+      const list = byId("previewList");
+      if (!selected.length) {
+        list.innerHTML = `<div class="empty">No items selected yet.</div>`;
+        return;
+      }
+      list.innerHTML = selected.map(item => `
+        <div class="invoice-item">
+          <div><strong>${item.item}</strong><small>${item.category} • ${item.unit} • Qty ${item.qty}</small></div>
+          <b>${money(item.line)}</b>
+        </div>
+      `).join("");
+    }
+
+    function updatePrintSheet(calc = calculate()) {
+      const now = new Date();
+      const budtender = clean(byId("budtender").value) || "-";
+      const customerName = clean(byId("customerName").value);
+      const customerPhone = clean(byId("customerPhone").value);
+      const customer = [customerName, customerPhone ? `Phone: ${customerPhone}` : ""].filter(Boolean).join(" | ") || "Optional / Not provided";
+
+      byId("invoiceIdPill").textContent = invoiceId;
+      byId("printInvoiceId").textContent = invoiceId;
+      byId("printDate").textContent = now.toLocaleString();
+      byId("printBudtender").textContent = budtender;
+      byId("printCustomer").textContent = customer;
+      byId("printCatStrains").textContent = money(calc.categoryTotals.Strains);
+      byId("printCatJoints").textContent = money(calc.categoryTotals.Joints);
+      byId("printCatEdibles").textContent = money(calc.categoryTotals.Edibles);
+      byId("printCommission").textContent = money(calc.commission);
+      byId("printGrandTotal").textContent = money(calc.total);
+
+      byId("printRows").innerHTML = calc.selected.length
+        ? calc.selected.map(item => `<tr><td>${item.category}</td><td>${item.item}</td><td>${item.unit}</td><td>${item.qty}</td><td>${money(item.line)}</td></tr>`).join("")
+        : `<tr><td colspan="5" style="text-align:center; color:#666; padding:18px;">No items selected.</td></tr>`;
+    }
+
+    function setStatus(message, isError = false) {
+      const status = byId("status");
+      status.textContent = message;
+      status.classList.toggle("error", isError);
+      if (message) window.clearTimeout(setStatus.timer);
+      if (message && !isError) setStatus.timer = window.setTimeout(() => { status.textContent = ""; }, 3500);
+    }
+
+    function validateReadyForExport() {
+      const budtender = clean(byId("budtender").value);
+      const calc = calculate();
+      if (!budtender) {
+        setStatus("Enter the budtender in-game / Discord name before exporting.", true);
+        byId("budtender").focus();
+        return false;
+      }
+      if (!calc.selected.length) {
+        setStatus("Select at least one item quantity before exporting.", true);
+        return false;
+      }
+      setStatus("");
+      return true;
+    }
+
+    function exportPdf() {
+      if (!validateReadyForExport()) return;
+      updatePrintSheet();
+      document.title = `${invoiceId}_White_Widow_Invoice`;
+      window.print();
+    }
+
+    function discordSummary() {
+      const calc = calculate();
+      const budtender = clean(byId("budtender").value) || "Not provided";
+      const customerName = clean(byId("customerName").value) || "Not provided";
+      const customerPhone = clean(byId("customerPhone").value) || "Not provided";
+      const lines = calc.selected.length
+        ? calc.selected.map(item => `- ${item.category}: ${item.item} x${item.qty} (${item.unit}) = ${money(item.line)}`).join("\n")
+        : "- No items selected";
+      return [
+        `White Widow Invoice ${invoiceId}`,
+        `Budtender: ${budtender}`,
+        `Customer RP Name: ${customerName}`,
+        `Customer RP Phone: ${customerPhone}`,
+        "",
+        lines,
+        "",
+        `Strains: ${money(calc.categoryTotals.Strains)}`,
+        `Joints: ${money(calc.categoryTotals.Joints)}`,
+        `Edibles: ${money(calc.categoryTotals.Edibles)}`,
+        `Grand Total: ${money(calc.total)}`,
+        `Budtender Commission 30%: ${money(calc.commission)}`,
+        "",
+        "Reminder: exported invoice PDF should be posted in Discord for records."
+      ].join("\n");
+    }
+
+    async function copySummary() {
+      if (!validateReadyForExport()) return;
+      const text = discordSummary();
+      try {
+        await navigator.clipboard.writeText(text);
+        setStatus("Discord summary copied.");
+      } catch (error) {
+        const helper = document.createElement("textarea");
+        helper.value = text;
+        document.body.appendChild(helper);
+        helper.select();
+        document.execCommand("copy");
+        helper.remove();
+        setStatus("Discord summary copied.");
+      }
+    }
+
+    function resetInvoice() {
+      Object.keys(quantities).forEach(key => { quantities[key] = 0; });
+      document.querySelectorAll(".qty-select").forEach(select => { select.value = "0"; });
+      ["budtender", "customerName", "customerPhone"].forEach(id => { byId(id).value = ""; });
+      localStorage.removeItem("wwInvoiceDraftCompact");
+      updateAll();
+      setStatus("Invoice reset.");
+    }
+
+    function saveDraft() {
+      const data = {
+        budtender: byId("budtender").value,
+        customerName: byId("customerName").value,
+        customerPhone: byId("customerPhone").value,
+        quantities
+      };
+      try { localStorage.setItem("wwInvoiceDraftCompact", JSON.stringify(data)); } catch (error) { /* storage can be unavailable */ }
+    }
+
+    function restoreDraft() {
+      try {
+        const raw = localStorage.getItem("wwInvoiceDraftCompact");
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        byId("budtender").value = data.budtender || "";
+        byId("customerName").value = data.customerName || "";
+        byId("customerPhone").value = data.customerPhone || "";
+        Object.entries(data.quantities || {}).forEach(([key, value]) => { quantities[key] = Number(value || 0); });
+        document.querySelectorAll(".qty-select").forEach(select => {
+          select.value = String(quantities[select.dataset.index] || 0);
+        });
+      } catch (error) { /* ignore damaged draft */ }
+    }
+
+    function init() {
+      renderItems();
+      restoreDraft();
+      updateAll();
+      ["budtender", "customerName", "customerPhone"].forEach(id => byId(id).addEventListener("input", updateAll));
+      byId("printBtn").addEventListener("click", exportPdf);
+      byId("copyBtn").addEventListener("click", copySummary);
+      byId("resetBtn").addEventListener("click", resetInvoice);
+    }
+
+    init();
+  </script>
+</body>
+</html>
